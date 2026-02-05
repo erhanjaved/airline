@@ -21,7 +21,7 @@ Combines revenue maximization and cost minimization into a single objective usin
 
 $$\text{Maximize} \quad \lambda \cdot \text{Revenue} - (1 - \lambda) \cdot \text{Cost}$$
 
-Includes capacity constraints tied seat sales to the fleet type assigned to each flight. The relationship between revenue generation and cost efficiency can be observed by adjusting the weights \lambda.
+Includes capacity constraints tied seat sales to the fleet type assigned to each flight. The relationship between revenue generation and cost efficiency can be observed by adjusting the weights $\lambda$.
 
 ## Requirements
 
