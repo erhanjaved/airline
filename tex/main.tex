@@ -1,0 +1,595 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{float}
+
+\usepackage[letterpaper,top=1in,bottom=1in,left=1in,right=1in]{geometry}
+\usepackage[skip=0.5em]{parskip}
+\usepackage{blindtext}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{adjustbox}
+\usepackage{bibentry}
+\usepackage{amssymb}
+
+\usepackage[colorlinks=true, hidelinks]{hyperref}
+
+\usepackage{listings}
+\lstset{frame=single, columns=flexible, basewidth={0.55em, 0.5em}}
+
+
+%========================================
+\begin{document}
+
+\input{title}
+\tableofcontents
+%========================================
+\newpage
+\section{Introduction}
+
+Airline operations involve a collection of complex and interrelated decision-making problems, such as fleet assignment, revenue management, scheduling, and network planning. Each of these aspects plays a crucial role in determining an airline’s overall profitability and operational efficiency. Even small changes in aircraft utilization or seat allocation strategies can lead to significant financial impacts, especially for international flights where operating costs are high and demand is uncertain.
+
+Turkish Airlines operates an extensive international network spanning multiple continents, serving routes with varying distances, demand profiles, and aircraft requirements. Figure 1 illustrates the international route network of Turkish Airlines departing from Istanbul, Turkey. For such networks, airlines must decide how to price and allocate seats across multiple fare classes, as well as which aircraft types should be assigned to specific flight legs in order to minimize operating costs. These decisions are linked: the choice of aircraft determines available seat capacity, while seat allocation decisions directly affect revenue outcomes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{route_map.png}
+    \caption{Routes of Turkish Airlines destinations from Istanbul, Turkey. Source: FlightsFrom.com.}
+    \label{fig:turkish_routes}
+\end{figure}
+
+In this project, we apply linear optimization techniques to study two fundamental airline planning problems: revenue management through seat allocation, and fleet assignment through cost minimization. The revenue management component focuses on determining the optimal number of seats to sell across multiple fare classes, subject to capacity and demand constraints, in order to maximize revenue. The fleet assignment component determines how different aircraft types should be assigned to international flight legs in order to minimize total operating costs, accounting for fuel consumption, crew costs, maintenance costs, and aircraft availability.
+
+While these problems are often studied independently, real-world airline planning requires them to be considered together. To address this interaction, we develop a combined optimization model using a weighted-sum multi-objective formulation. This approach allows us to simultaneously maximize total revenue and minimize total operating cost within a single mixed-integer linear programming framework. The resulting model captures the trade-off between revenue generation and cost efficiency, while remaining computationally tractable and appropriate for a linear programming setting.
+
+The scope of this project is intentionally limited to a simplified yet realistic setting involving a small set of international flight legs and wide-body aircraft types. Although the model does not account for network flow, aircraft repositioning, or dynamic demand forecasting, it provides meaningful insights into how fleet assignment decisions influence revenue outcomes and vice versa. By implementing and solving the model using Python and the \texttt{cvxpy} optimization library, we demonstrate how linear programming can be effectively used to analyze and integrate multiple airline planning decisions.
+
+
+%========================================
+%========================================
+\section{Base Models}
+\subsection{Revenue Model}
+In an airline industry, revenue management requires a strategic calculations and allocations for a good profit margin. One of the most important parts of the revenue for an airline company is the seat allocation for each aircraft since they have a limited capacity. Most of the airline companies uses different models to determine the distribution of seat class fares to gain the most revenue. 
+
+The following model is one of the basic maximization problem that can solve this allocation problem. This is a problem to maximize profit by seat allocation and seat pricing distribution based on the class fares. The pricing and the capacity of the aircraft is fixed in this problem. The basic version of this problem will give us this following equation:\cite{mitocw_revenue_management}
+
+\noindent\textbf{Decision variables}
+\begin{itemize}
+    \item $R$: Number of regular seats to sell
+    \item $D$: Number of discount seats to sell
+\end{itemize}
+
+\noindent\textbf{Objective Function}
+\begin{equation}
+    \text{Maximize} \hspace{1em} P_r \cdot R + P_d \cdot D
+\end{equation}
+
+\noindent where $P_r$ is the price of regular seats, and $P_d$ is the price of discount seats.
+
+\noindent\textbf{Constraints}
+\begin{align*}
+    \text{Subject to} \hspace{1em}& R + D \leq C \\
+    & R \leq C_r \\
+    & D \leq C_d \\
+    & R, D \geq 0
+\end{align*}
+The seats sold, $R,D$ should be less than the capacity ($C_r,C_d,C$) of each class fare, and the seat sold must be a non-negative integer.
+\subsubsection{Model Construction}
+For our original problem where we need to examine Turkish Airlines' flights will have a slightly different objective function. We add another variable to our constraints, the demand of the seat class category. Turkish airlines economy class has different subclasses where they do not have a predetermined number of seats to be sold. Thus, we add another constraints about demand of the number of the seats. 
+
+\vspace{2.5mm}
+\noindent \textbf{Variables}
+
+\noindent EcoFly seat(Eco)
+\begin{itemize}
+    \item Price of EcoFly seat: $P_{Eco}$
+    \item Demand of EcoFly seat: $D_{Eco}$
+\end{itemize}
+
+\noindent FlexFly seat(Flex)
+\begin{itemize}
+    \item Price of FlexFly seat: $P_{Flex}$
+    \item Demand of FlexFly seat: $D_{Flex}$
+\end{itemize}
+
+\noindent PrimeFly seat(Prime)
+\begin{itemize}
+    \item Price of PrimeFly seat: $P_{Prime}$
+    \item Demand of PrimeFly seat: $D_{Prime}$
+\end{itemize}
+
+\noindent Business seat(Business)
+\begin{itemize}
+    \item Price of Business seat: $P_{Business}$
+    \item Demand of Business seat: $D_{Business}$
+
+\end{itemize}
+Since Business class has predetermined number of seats, the demand variable will be used almost like a capacity constraint.
+
+\vspace{2.5mm}
+\noindent\textbf{Decision Variables}
+\begin{itemize}
+    \item Number of EcoFly seats sold: $N_{Eco}$
+    \item Number of FlexFly seats sold: $N_{Flex}$
+    \item Number of PrimeFly seats sold: $N_{Eco}$
+    \item Number of Business seats sold: $N_{Business}$
+\end{itemize}
+
+\vspace{2.5mm}
+\noindent\textbf{Objective Function}
+\begin{equation}
+    \text{Maximize} \hspace{1em} P_{Eco} \cdot N_{Eco} + P_{Flex} \cdot N_{Flex} +P_{Prime} \cdot N_{Prime} + P_{Business} \cdot N_{Business}
+\end{equation}
+
+\noindent Where $P_i$ is the price of the seats, and $N_i$ is the number of the seats sold.
+
+\vspace{2.5mm}
+\noindent\textbf{Constraints}\\
+
+\noindent The overall capacity of the aircraft will be denoted by $C$. The capacity of Business Class is denoted by $C_{Business}$ and the total capacity of economy class (all 3 classes) is denoted by $C_{Economy}$. The demands of each Economy class is denoted by $D_i$.
+\begin{align*}
+    \text{Subject to} \hspace{1em} 
+        N_{Eco} + N_{Flex} + N_{Prime}+N_{Business} &\leq C \\
+        N_{Eco} + N_{Flex} + N_{Prime} &\leq C_{Economy} \\
+        N_{Business} &\leq C_{Business}
+\end{align*}
+
+The constraints are based on the number of seats sold in each category to be less then or equal to the capacity of each category while all the categories combines should be less than the aircraft capacity. 
+\begin{align*}
+        N_{Eco} &\leq D_{Eco}\\
+        N_{Flex} &\leq D_{Flex}\\
+        N_{Prime} &\leq D_{Prime}\\
+        N_{Eco}, N_{Flex}, N_{Prime},N_{Business}&\geq 0
+\end{align*}
+The number of seats sold from each economy fare class needs to be less than the demand of that fare class. And the seats sold should be a non-negative integer. 
+
+
+
+
+
+\noindent $C$ is the total seat capacity, and $C_r$ and $C_d$ are the capacity of regular seats and discount seats respectively.
+
+\subsubsection{Results}
+
+Turkish Airlines flight TK75 from Istanbul(IST) Airport to Vancouver(YVR) Airport with Boeing 777-300ER has 300 seats total capacity, 300 Economy and 49 Business class. The prices (in USD) for each Economy class and Business class are ;
+\begin{itemize}
+    \item EcoFly: $P_{Eco} = 635$ 
+    \item FlexFly: $P_{Flex} = 765$
+    \item PrimeFly: $P_{Prime} = 920$
+    \item Business: $P_{Business} = 2300$
+\end{itemize}
+All the prices are based on a TK75 flight that departs 6 months from now.
+
+To calculate the demand of economy seats, the prices of the each class were taken into account and their ratios. The demand is a prediction and can be explored further but in this paper, the approximations are going to be used. 
+
+\begin{itemize}
+    \item EcoFly: $D_{Eco} = 180$ 
+    \item FlexFly: $D_{Flex} = 120$
+    \item PrimeFly: $D_{Prime} = 60$
+\end{itemize}
+The results of our objective function, after it is solved using Python \texttt{cvxpy} yields the optimal revenue of 335,900.00 USD with 120 EcoFly, 120 FlexFly, 60 PrimeFly, and 49 Business class seats sold.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\hline
+\textbf{Fare Class} & \textbf{Price (USD)} & \textbf{Demand} & \textbf{Seats Allocated} & \textbf{Revenue (USD)}\\
+\hline
+EcoFly & 635 & 180 & 120 & 76,200\\
+FlexFly & 765 & 120 & 120 & 91,800\\
+PrimeFly & 920 & 60 & 60 & 55,200\\
+Business & 2,300 & --- & 49 & 112,700\\
+\hline
+\textbf{Total} & --- & --- & \textbf{349} & \textbf{335,900} \\
+\hline
+\end{tabular}
+\caption{Optimal Seat Allocation and Revenue by Fare Class}
+\label{tab:optimal_allocation}
+\end{table}
+
+\subsubsection{Discussion}
+
+The optimal revenue can vary depending on the demand and price values of each fare class in Economy. Since the demand values are estimated based on the ratios of the prices of each fare class rather than real-market data, the optimal revenue is an approximation rather than the exact prediction. However, the model gives a good representation of the result and useful insight to how these different fare classes and their prices can be distributed to gain maximum amount of revenue. 
+
+From the results, the demand values of each fare class other than $EcoFly$ acts as a binding value for the optimal solution, and the model always prioritizes the high value prices to maximize the revenue. The model always utilizes the premium classes before the others to get the maximum revenue. The changes in the demand values will alter the optimal solution, and the distribution of the seat allocation based on the high value prices. If the $PrimeFly$ demand were to be changed to 90 from 60, the seat allocation will be shifted more towards $PrimeFly$, then $FlexFly$, after these fare classes the remaining seats will be given to the $EcoFly$ class. 
+
+To get a better this representation of this maximization problem model, the demand values can be explored further with real-market data and other several factors. The demand is another topic to explore since it depends of many factors, such as seasons, day of the week, the perks of each class, macroeconomic factors and many more, and not just the price ratios. This model can be refined further to include more adjustable demand values to better incorporate it to fit the real world data. Better demand values can also be achieved by studying historical data of the past passenger demands. Exploring demand values and incorporating these findings in this revenue model will lead to a better representation and more accurate results.
+
+
+
+%========================================
+%========================================
+\subsection{Fleet Assignment Model}
+
+The fleet assignment problem determines which aircraft fleet type should be assigned to each flight leg in order to minimize total operating cost \cite{article2}. In our simplified version, each flight leg must be covered by exactly one fleet type, having daily utilization limits, round-trip pairing consistency, and aircraft range feasibility. The model is formulated as a mixed-integer linear program.
+
+\subsubsection{Model Construction}
+
+\textbf{Sets and Indices}
+\begin{itemize}
+    \item $F$: set of flight legs, indexed by $i \in F$
+    \item $K$: set of fleet types, indexed by $j \in K$
+    \item $P$: set of paired outbound-return legs $(i,i') \in P$
+\end{itemize}
+
+\textbf{Parameters}
+\begin{itemize}
+    \item $d_i$: distance of flight leg $i$ (miles)
+    \item $v$: assumed cruise speed (miles/hour)
+    \item $h_i$: block time of flight leg $i$ (hours), computed as
+    $$
+    h_i = \frac{d_i}{v}
+    $$
+    \item $N_j$: number of available aircraft of fleet type $j$
+    \item $H_{\max}$: maximum usable crew-hours (block hours) per aircraft per day
+    \item $r_j$: maximum feasible flight range of fleet type $j$ (miles)
+
+    \item $f_j$: fuel burn rate of fleet type $j$ (kg/hour)
+    \item $p_{\text{fuel}}$: fuel price (USD/kg)
+    \item $m_j$: maintenance cost rate of fleet type $j$ (USD/hour)
+    \item $c_j$: crew cost rate of fleet type $j$ (USD/hour)
+\end{itemize}
+
+\textbf{Decision Variables}
+\begin{itemize}
+    \item $x_{i,j} \in \{0,1\}$: equals 1 if flight leg $i$ is assigned fleet type $j$, and 0 otherwise
+\end{itemize}
+
+\textbf{Operating Cost per Assignment}
+
+For each flight to fleet assignment $(i,j)$, we define the operating cost as fuel + maintenance + crew costs, all proportional to block time:
+$$
+c_{i,j} =
+\left(f_j \cdot p_{\text{fuel}} + c_j + m_j\right)\cdot h_i
+$$
+
+\textbf{Objective Function}
+
+The objective is to minimize the total operating cost across all assigned flight legs:
+\begin{equation}
+    \min \sum_{i \in F}\sum_{j \in K} c_{i,j}\,x_{i,j}
+\end{equation}
+
+
+\textbf{Constraints}
+
+Flight Coverage: Each flight leg must be assigned exactly one fleet type:
+$$
+\sum_{j \in K} x_{i,j} = 1 \quad \forall i \in F
+$$
+
+Operational Pairing (Round-Trip Consistency). For each paired outbound and return leg $(i,i') \in P$, the same fleet type must be used:
+$$
+x_{i,j} = x_{i',j} \quad \forall j \in K,\; \forall (i,i') \in P
+$$
+
+Crew-Hour Availability. Total crew-hours used by fleet type $j$ across assigned flights cannot exceed the available aircraft-hours:
+$$
+\sum_{i \in F} h_i\,x_{i,j} \le N_j \cdot H_{\max} \quad \forall j \in K
+$$
+
+Range Feasibility. A fleet type may only be assigned to routes within its operational range:
+$$
+x_{i,j} = 0 \quad \text{if } d_i > r_j
+$$
+
+\subsubsection{Results}
+
+Table 2 reports the optimal fleet assignment and associated operating costs for each flight leg. Long-haul routes such as IST-YVR and IST—JFK are assigned wide-body aircraft with sufficient range, specifically the B787-9 and B777-300ER, respectively. Shorter international routes, such as IST-LHR, are also assigned the B787-9, reflecting its lower operating cost per hour relative to alternative wide-body options. All outbound and inbound legs are assigned symmetrically, ensuring operational consistency across round-trip pairings.
+
+The total operating cost across the six flight legs is \$477{,}804. Fuel costs account for \$255{,}966 (53.6\%) of total cost, followed by crew costs of \$128{,}811 (27.0\%) and maintenance costs of \$92{,}027 (19.3\%). The total block hours operated under the optimal assignment equal 45.40 hours. 
+
+The total operating cost is computed as the sum of fuel, maintenance, and crew costs across all assigned flights. These results form the cost-minimizing component of the weighted-sum model introduced in the final section of the paper.
+
+\begin{table}[H]
+\centering
+\small
+\label{tab:fleet_assignment}
+\begin{tabularx}{\textwidth}{llXXXXXX}
+\toprule
+\textbf{Flight} & \textbf{Route} & \textbf{Fleet Type} & \textbf{Block Hours} & \textbf{Fuel Cost} & \textbf{Crew Cost} & \textbf{Maint. Cost} & \textbf{Total Cost} \\
+ &  &  &  & \textbf{(USD)} & \textbf{(USD)} & \textbf{(USD)} & \textbf{(USD)} \\
+\midrule
+TK75 & IST--YVR & B787-9 & 10.67 & 53,765 & 29,870 & 21,335 & 104,970 \\
+TK76 & YVR--IST & B787-9 & 10.67 & 53,765 & 29,870 & 21,335 & 104,970 \\
+TK001 & IST--JFK & B777-300ER & 8.93 & 60,268 & 26,786 & 19,643 & 106,696 \\
+TK002 & JFK--IST & B777-300ER & 8.93 & 60,268 & 26,786 & 19,643 & 106,696 \\
+TK193 & IST--LHR & B787-9 & 2.77 & 13,950 & 7,750 & 5,536 & 27,236 \\
+TK194 & LHR--IST & B787-9 & 2.77 & 13,950 & 7,750 & 5,536 & 27,236 \\
+\midrule
+\multicolumn{3}{l}{\textbf{Total Operating Cost}} & \textbf{45.40} & \textbf{255,966} & \textbf{128,811} & \textbf{92,027} & \textbf{477,804} \\
+\bottomrule
+\end{tabularx}
+\caption{Optimal Fleet Assignment and Operating Costs by Flight Leg}
+
+\end{table}
+
+\subsubsection{Discussion}
+
+The fleet assignment results highlight how operating cost differences across aircraft types influence assignment decisions. Because fuel burn, crew costs, and maintenance costs scale with block time, longer routes place greater emphasis on fuel efficiency and range capability, while shorter routes are more sensitive to hourly operating costs.
+
+Several simplifying assumptions were made in this model. First, aircraft availability is approximated using aggregate crew-hour limits rather than a detailed time-space network, meaning that aircraft positioning and exact scheduling are not explicitly modeled. Second, the model assumes that sufficient aircraft are available at each origin airport when needed, and does not account for repositioning or maintenance routing. Finally, demand uncertainty and stochastic disruptions are not considered.
+
+Despite these limitations, the fleet assignment model provides a realistic and interpretable baseline for cost-efficient aircraft deployment. When combined with the revenue management model in the weighted-sum formulation, it enables the analysis of trade-offs between operating cost minimization and revenue maximization in an integrated airline planning framework.
+
+
+
+%========================================
+%========================================
+\section{Profit Maximization Model}
+A profit maximization problem for an airline company can be solved in several different subproblems: fleet assignment, revenue management, scheduling, route selection, and network planning. Although these topics often involve simple integer programming or more complex methods (nonlinear) for realistic solutions, they can also be approached with linear programming techniques. The goal of this project is to combine a single-leg fleet assignment problem and a part of the revenue problem into one linear optimization problem. Thus, the weighted sum method \cite{article1} is used for multiobjective optimization. Additionally, examples are shown in the result section (3.2) using parametric analysis to show how results vary across different weight values. 
+
+
+
+\subsection{Model Construction} 
+
+\subsubsection{Introduction to Weighted Sum Method}
+The weighted sum method is used for multi-objective optimization formulation \cite{article1}.
+\begin{equation}
+    \text{Minimize} \hspace{1em} J(x,p) 
+\end{equation}
+\begin{align*}
+    \hspace{6em}\text{Subject to} \hspace{1em} g(x,p) &\leq 0\\
+     h(x,p) &= 0\\
+    x_{i,LB} \leq x_i &\leq x_{i,UB} \hspace{1em} (i = 1,\dots,n) 
+\end{align*}
+
+\noindent $J(x,p)$ is the vector valued objective function. $x$ and $p$ are a design vector and a fixed parameter vector respectively.
+
+Aggregated objective function
+\begin{equation}
+J_{\text{weighted sum}} = w_1J_1 + w_2J_2 + \dots + w_mJ_m
+\end{equation}
+
+\subsubsection{Objective Function}
+We adopt the notation from Sections 2.1 and 2.2.
+\begin{align}
+\text{Maximize} \quad & \lambda \cdot Revenue - (1-\lambda) \cdot Cost \nonumber \\
+= & \; \lambda \sum_{i \in F} \Big( P_{Eco,i} \cdot N_{Eco,i} + P_{Flex,i} \cdot N_{Flex,i} \nonumber \\
+& + P_{Prime,i} \cdot N_{Prime,i} + P_{Business,i} \cdot N_{Business,i} \Big) \nonumber \\
+& - (1-\lambda) \sum_{i \in F}\sum_{j \in K} c_{i,j} \cdot x_{i,j}
+\end{align}
+where $\lambda \leq 1$
+
+
+\subsubsection{Constraints}
+
+\begin{enumerate}
+\item \textbf{Flight Coverage}\\
+Each flight must be assigned exactly one fleet type:
+\begin{align*}
+\sum_{j \in K} x_{i,j} = 1 \quad \forall i \in F
+\end{align*}
+
+
+\item \textbf{Crew-Hour (Block-Hour) Availability}\\
+Total crew-hours consumed by fleet type $j$ cannot exceed available crew-hours:
+\begin{align*}
+\sum_{i \in F} h_i \cdot x_{i,j} \le N_j \cdot H_{\max} \quad \forall j \in K
+\end{align*}
+
+
+\item \textbf{Aircraft Range Feasibility}\\
+Fleet types may only be assigned to routes within their operational range:
+\begin{align*}
+x_{i,j} = 0 \quad \text{if } d_i > r_j
+\end{align*}
+
+
+\item \textbf{Operational Pairing (Round-Trip Consistency)}\\
+For paired outbound and return flight legs $(i,i') \in P$, the same fleet type must be used:
+\begin{align*}
+x_{i,j} = x_{i',j} \quad \forall j \in K,\; \forall (i,i') \in P
+\end{align*}
+
+
+\item \textbf{Demand Constraints (Seat Allocation)}\\
+Seat sales on each flight may not exceed demand, for 
+$\forall i \in F$:
+
+\begin{align*}
+0 \leq N_{Eco,i} \leq D_{Eco,i}, \\
+0 \leq N_{Flex,i} \leq D_{Flex,i}, \\
+0 \leq N_{Prime,i} \leq D_{Prime,i}, \\
+0 \leq N_{Business,i} \leq D_{Business,i} 
+\end{align*}
+
+\item \textbf{Capacity Linking Constraints}\\
+Seat sales on each flight must fit within the cabin capacities implied by the assigned fleet type:
+\begin{align*}
+N_{Business,i} \leq \sum_{j \in K} C_{Business,j} \cdot x_{i,j} \quad \forall i \in F\\
+N_{Eco,i} + N_{Flex,i} + N_{Prime,i} \leq \sum_{j \in K} C_{Economy,j} \cdot x_{i,j} \quad \forall i \in F
+\end{align*}
+\end{enumerate}
+
+\subsubsection{Sample Data}
+
+The sample data below contains fixed estimated values. Flight distances are from \url{www.airmilescalculator.com}, and fleet information is sourced from Turkish Airlines and aircraft manufacturer websites. All other parameters are estimated values for modeling purposes.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\label{tab:flight_parameters}
+\begin{tabular}{lccrrrrrrrrr}
+\toprule
+\textbf{Flight} & \textbf{Origin} & \textbf{Dest} & \textbf{Distance} & \multicolumn{4}{c}{\textbf{Prices (USD)}} & \multicolumn{4}{c}{\textbf{Demand (seats)}} \\
+\cmidrule(lr){5-8} \cmidrule(lr){9-12}
+\textbf{ID} & & & \textbf{(mi)} & \textbf{Eco} & \textbf{Flex} & \textbf{Prime} & \textbf{Bus} & \textbf{Eco} & \textbf{Flex} & \textbf{Prime} & \textbf{Bus} \\
+\midrule
+TK75 & IST & YVR & 5,973.9 & 635 & 765 & 920 & 2,300 & 180 & 120 & 60 & 49 \\
+TK76 & YVR & IST & 5,973.9 & 635 & 765 & 920 & 2,300 & 180 & 120 & 60 & 49 \\
+TK001 & IST & JFK & 5,000.0 & 600 & 760 & 910 & 3,100 & 180 & 120 & 60 & 49 \\
+TK002& JFK &IST &5,000.0 &600 &760 &910 &3,100 &180 &120 &60 &49\\
+TK193&IST&LHR&1,550.0 &140&185&205&900&140&160&90&50\\
+TK194&LHR&IST&1,550.0&140&185&205&900&140&160&90&50\\
+& & & & &\vdots \\
+\bottomrule
+\end{tabular}
+\caption{Flight Leg Parameters and Demand Data}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\label{tab:fleet_parameters}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Parameter} & \textbf{B777-300ER} & \textbf{B787-9}  &\textbf{{A330-300}}\\
+\midrule
+Total Seats & 349 & 290 & 291\\
+Business Class Seats & 49 & 30 & 28\\
+Economy Class Seats & 300 & 270 & 263\\
+\midrule
+Fuel Burn (kg/hr) & 7,500 & 8,100 &5700\\
+Maintenance Cost (USD/hr) & 2,200 & 2,000 &2000\\
+Pilot Cost (USD/hr) & 700 & 700 &700\\
+Cabin Crew Cost (USD/hr) & 1,200 & 800 &700\\
+\midrule
+Available Aircraft & 3 & 3 &3\\
+Maximum Range (mi) & 7,300 & 7,600 &6300\\
+\bottomrule
+\end{tabular}
+\caption{Aircraft Fleet Characteristics and Operating Parameters}
+\end{table}
+
+
+
+
+\subsection{Results}
+The results below were generated with $\lambda = 0.6$.
+
+\begin{table}[H]
+\centering
+\label{tab:optimization_summary}
+\begin{tabularx}{0.58\textwidth}{Xr}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Objective Function Value & \$1,767,719.90 \\
+\midrule
+Total Revenue & \$2,147,964.00 \\
+Total Operating Cost & \$380,244.10 \\
+Total Profit & \$1,767,719.90 \\
+\midrule
+Number of Flight Legs & 16 \\
+Average Profit per Flight & \$110,482.44 \\
+\bottomrule
+\end{tabularx}
+\caption{Model Optimization Summary}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\label{tab:fleet_seat_assignment}
+\begin{tabular}{llcrrrrr}
+\toprule
+\textbf{Flight} & \textbf{Route} & \textbf{Aircraft} & \textbf{Hours} & \textbf{EcoFly} & \textbf{FlexFly} & \textbf{PrimeFly} & \textbf{Business} \\
+\midrule
+TK75 & IST--YVR & A330-300 & 10.7 & 83/180 & 120/120 & 60/60 & 28/49 \\
+TK76 & YVR--IST & A330-300 & 10.7 & 83/180 & 120/120 & 60/60 & 28/49 \\
+TK001 & IST--JFK & B777-300ER & 8.9 & 120/180 & 120/120 & 60/60 & 49/49 \\
+TK002 & JFK--IST & B777-300ER & 8.9 & 120/180 & 120/120 & 60/60 & 49/49 \\
+TK193 & IST--LHR & B787-9 & 2.8 & 20/140 & 160/160 & 90/90 & 30/50 \\
+TK194 & LHR--IST & B787-9 & 2.8 & 20/140 & 160/160 & 90/90 & 30/50 \\
+TK17 & IST--YYZ & A330-300 & 9.1 & 83/180 & 120/120 & 60/60 & 28/50 \\
+TK18 & YYZ--IST & A330-300 & 9.1 & 83/160 & 120/120 & 60/60 & 28/50 \\
+TK1821 & IST--CDG & B777-300ER & 2.5 & 90/140 & 120/120 & 90/90 & 49/50 \\
+TK1830 & CDG--IST & B777-300ER & 2.5 & 90/140 & 120/120 & 90/90 & 49/50 \\
+TK1523 & IST--DUS & B787-9 & 2.2 & 50/150 & 130/130 & 90/90 & 30/50 \\
+TK1530 & DUS--IST & B787-9 & 2.2 & 50/150 & 130/130 & 90/90 & 30/50 \\
+TK1951 & IST--AMS & A330-300 & 2.4 & 33/130 & 120/120 & 110/110 & 28/50 \\
+TK1952 & AMS--IST & A330-300 & 2.4 & 33/130 & 120/120 & 110/110 & 28/50 \\
+TK198 & IST--HND & B777-300ER & 10.0 & 90/170 & 150/150 & 60/60 & 49/50 \\
+TK199 & HND--IST & B777-300ER & 10.0 & 90/170 & 150/150 & 60/60 & 49/50 \\
+\bottomrule
+\end{tabular}
+\caption{Optimal Fleet Assignment and Seat Allocation for Each Assigned Flight}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\label{tab:financial_performance}
+\begin{tabular}{llcrrr}
+\toprule
+\textbf{Flight} & \textbf{Route} & \textbf{Aircraft} & \textbf{Revenue (USD)} & \textbf{Cost (USD)} & \textbf{Profit (USD)} \\
+\midrule
+TK75 & IST--YVR & A330-300 & 158,463 & 36,398 & 122,065 \\
+TK76 & YVR--IST & A330-300 & 158,463 & 36,398 & 122,065 \\
+TK001 & IST--JFK & B777-300ER & 221,820 & 38,750 & 183,070 \\
+TK002 & JFK--IST & B777-300ER & 221,820 & 38,750 & 183,070 \\
+TK193 & IST--LHR & B787-9 & 46,710 & 11,946 & 34,764 \\
+TK194 & LHR--IST & B787-9 & 46,710 & 11,946 & 34,764 \\
+TK17 & IST--YYZ & A330-300 & 158,640 & 31,013 & 127,627 \\
+TK18 & YYZ--IST & A330-300 & 158,640 & 31,013 & 127,627 \\
+TK1821 & IST--CDG & B777-300ER & 71,559 & 10,695 & 60,864 \\
+TK1830 & CDG--IST & B777-300ER & 71,559 & 10,695 & 60,864 \\
+TK1523 & IST--DUS & B787-9 & 42,120 & 9,634 & 32,486 \\
+TK1530 & DUS--IST & B787-9 & 42,120 & 9,634 & 32,486 \\
+TK1951 & IST--AMS & A330-300 & 38,550 & 8,286 & 30,264 \\
+TK1952 & AMS--IST & A330-300 & 38,550 & 8,286 & 30,264 \\
+TK198 & IST--HND & B777-300ER & 336,120 & 43,400 & 292,720 \\
+TK199 & HND--IST & B777-300ER & 336,120 & 43,400 & 292,720 \\
+\midrule
+\multicolumn{3}{l}{\textbf{Total (USD)}} & \textbf{2,147,964} & \textbf{380,244} & \textbf{1,767,720} \\
+\bottomrule
+\end{tabular}
+\caption{Revenue, Cost, and Profit for Each Assigned Flight}
+\end{table}
+
+The weighted-sum optimization model yields a profitable and operationally feasible solution across the selected international network. Table 5 summarizes the overall performance of the optimal solution. The model generates total revenue of \$2.15 million against operating costs of \$380{,}244, resulting in a total profit of \$1.77 million. The objective function value equals total profit, reflecting the profit-maximization formulation used in the weighted-sum model. Across 16 flight legs, the average profit per flight is \$110{,}482.
+
+Table 6 reports the optimal aircraft assignment and seat allocation by fare class for each flight leg. For each route, the model assigns a single fleet type and determines the optimal number of seats sold in each cabin class subject to aircraft capacity and demand constraints. Higher-yield fare classes (FlexFly, PrimeFly, and Business) are consistently filled to or near capacity, while Economy-class allocations vary by route, indicating selective revenue optimization rather than full capacity utilization on all segments. Aircraft assignments are symmetric across outbound and inbound legs, ensuring round-trip operational consistency.
+
+Table 7 presents the resulting revenue, cost, and profit for each flight leg. Long-haul routes such as IST-HND and IST-JFK generate the highest absolute profits, driven by high revenues relative to operating costs, while shorter European routes contribute smaller but positive profits. All flight legs in the optimal solution are profitable, and no route operates at a loss. 
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{weights_output.png}
+    \caption{Parametric Analysis of Weight Parameter Lambda}
+\end{figure}
+
+The parametric analysis (figure 2) shows the tradeoff between the revenue maximization and cost minimization in the weighted sum formulation. The left plot shows how revenue and cost respond to the different weight values. Revenue increases sharply for $\lambda \lesssim 0.05$ and stays quite stable in range $0.05 \lesssim \lambda \lesssim 1.0$, with a slight increase at $0.7 \lesssim \lambda$. The cost stays stable overall with slight increase after $0.7 \lesssim \lambda$. In the right plot, profit is lower at $\lambda \lesssim 0.05$ because revenue is less than operating cost, and profit remains stable at $0.2 \lesssim \lambda \lesssim 0.7$. At the high $\lambda$ values (approximately $0.7 \lesssim \lambda$), profit decreases while revenue stays at peak values due to higher operating costs. 
+
+
+\subsection{Discussion}
+
+The  solver produces an integrated plan (see Tables 5, 6, and 7) that selects (i) a fleet type for each international flight leg and (ii) a seat-allocation policy across fare classes for each flight, while enforcing operational feasibility through range limits, paired out-and-back consistency, and a daily crew-hour availability constraint. In the resulting solution, the model tends to allocate higher-yield seats (e.g., Flex/Prime and Business) up to their demand limits and then fills remaining capacity with lower-fare economy seats. This behavior is expected under a linear revenue objective with fixed prices: because each additional seat sold increases revenue and there is no explicit penalty for selling near capacity, the optimizer will typically push seat sales toward the capacity ceiling whenever the demand caps allow it. On the fleet side, aircraft are assigned to minimize the operating-cost term (fuel + maintenance + crew) subject to feasibility; long-haul legs are consistently assigned aircraft that satisfy range and offer lower cost per block hour, while the pairing constraint forces symmetric assignments on return legs.
+
+Interpreting these outputs, the solution demonstrates the intended trade-off captured by the weighting parameter $\lambda$: increasing the emphasis on cost (larger $\lambda$) would shift assignments toward lower-cost fleets (when feasible) and can reduce the incentive to allocate capacity toward higher operating-cost choices, while decreasing $\lambda$ prioritizes revenue and pushes seat sales toward the upper demand and capacity bounds. However, some outcomes may appear `too perfect' (e.g., very high load factors and repeated sell-outs) because the model uses simplified, deterministic demand limits and does not incorporate demand uncertainty, price-response curves, or network timing/aircraft positioning constraints. Despite these simplifications, the combined model is still valuable as a baseline: it makes the coupling between fleet capacity and revenue explicit (through capacity-linking constraints), and it provides clear, interpretable insights into how operational fleet choices constrain and shape revenue-maximizing seat allocations across the network.
+
+\section{Conclusion}
+
+Since this project aimed to construct a simple linear programming model using a real-world example, it has many limitations in covering all possible uncertainties in the real world. Thus, this project focuses on observing the relationship between the two that most affect the final profit: reducing operation cost and maximizing revenue generation on the flight tickets, given fixed demand estimates.
+
+The project first started with a simple idea of maximizing profit to make it a pure LP problem. However, having airline as a topic pushed this project further to have a bit of combinatorial optimization in our final model as reducing operation cost and increasing revenue with the flight tickets both are heavily affected by fleet allocation. Without fleet allocation, this problem becomes trivial, simply selling seats up to capacity.
+
+That said, our model does not consider network flow or repositioning of aircraft, which means that we assume there is sufficient fleet at each origin where needed. Although we included pairing solutions to make the fleet return to where it departed as a priority, it does not mean that our model works on a timed schedule. In addition, as shown in the sample data section (3.1.4), the model requires a list of flight legs with fixed demand estimates and fleet information. 
+
+In the future, improvements can be made by combining dynamic demand forecasting with stochastic models, network flow with hub location problems or fleet relocating, scheduling problems such as time-based scheduling, crew scheduling, or multi-leg flight planning.
+
+
+\section{Code}
+
+All data processing, model implementation, and optimization results presented in this paper were generated using a reproducible Python-based workflow. The complete code, including the linear programming formulation, input data, and results are accessible on GitHub.
+
+\textbf{GitHub Repository:} \url{https://github.com/erhanjaved/airline}
+
+
+
+
+
+%========================================
+%========================================
+\newpage
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{plain}
+\bibliography{references}
+\nocite{*}
+
+\end{document}
