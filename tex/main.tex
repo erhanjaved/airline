@@ -114,7 +114,7 @@ Since Business class has predetermined number of seats, the demand variable will
 \begin{itemize}
     \item Number of EcoFly seats sold: $N_{Eco}$
     \item Number of FlexFly seats sold: $N_{Flex}$
-    \item Number of PrimeFly seats sold: $N_{Eco}$
+    \item Number of PrimeFly seats sold: $N_{Prime}$
     \item Number of Business seats sold: $N_{Business}$
 \end{itemize}
 
@@ -123,8 +123,6 @@ Since Business class has predetermined number of seats, the demand variable will
 \begin{equation}
     \text{Maximize} \hspace{1em} P_{Eco} \cdot N_{Eco} + P_{Flex} \cdot N_{Flex} +P_{Prime} \cdot N_{Prime} + P_{Business} \cdot N_{Business}
 \end{equation}
-
-\noindent Where $P_i$ is the price of the seats, and $N_i$ is the number of the seats sold.
 
 \vspace{2.5mm}
 \noindent\textbf{Constraints}\\
@@ -146,11 +144,6 @@ The constraints are based on the number of seats sold in each category to be les
 \end{align*}
 The number of seats sold from each economy fare class needs to be less than the demand of that fare class. And the seats sold should be a non-negative integer. 
 
-
-
-
-
-\noindent $C$ is the total seat capacity, and $C_r$ and $C_d$ are the capacity of regular seats and discount seats respectively.
 
 \subsubsection{Results}
 
@@ -326,26 +319,8 @@ A profit maximization problem for an airline company can be solved in several di
 
 \subsection{Model Construction} 
 
-\subsubsection{Introduction to Weighted Sum Method}
-The weighted sum method is used for multi-objective optimization formulation \cite{article1}.
-\begin{equation}
-    \text{Minimize} \hspace{1em} J(x,p) 
-\end{equation}
-\begin{align*}
-    \hspace{6em}\text{Subject to} \hspace{1em} g(x,p) &\leq 0\\
-     h(x,p) &= 0\\
-    x_{i,LB} \leq x_i &\leq x_{i,UB} \hspace{1em} (i = 1,\dots,n) 
-\end{align*}
-
-\noindent $J(x,p)$ is the vector valued objective function. $x$ and $p$ are a design vector and a fixed parameter vector respectively.
-
-Aggregated objective function
-\begin{equation}
-J_{\text{weighted sum}} = w_1J_1 + w_2J_2 + \dots + w_mJ_m
-\end{equation}
-
 \subsubsection{Objective Function}
-We adopt the notation from Sections 2.1 and 2.2.
+We use the weighted sum method \cite{article1} to combine the two objectives, adopting the notation from Sections 2.1 and 2.2.
 \begin{align}
 \text{Maximize} \quad & \lambda \cdot Revenue - (1-\lambda) \cdot Cost \nonumber \\
 = & \; \lambda \sum_{i \in F} \Big( P_{Eco,i} \cdot N_{Eco,i} + P_{Flex,i} \cdot N_{Flex,i} \nonumber \\
@@ -569,7 +544,7 @@ Since this project aimed to construct a simple linear programming model using a 
 
 The project first started with a simple idea of maximizing profit to make it a pure LP problem. However, having airline as a topic pushed this project further to have a bit of combinatorial optimization in our final model as reducing operation cost and increasing revenue with the flight tickets both are heavily affected by fleet allocation. Without fleet allocation, this problem becomes trivial, simply selling seats up to capacity.
 
-That said, our model does not consider network flow or repositioning of aircraft, which means that we assume there is sufficient fleet at each origin where needed. Although we included pairing solutions to make the fleet return to where it departed as a priority, it does not mean that our model works on a timed schedule. In addition, as shown in the sample data section (3.1.4), the model requires a list of flight legs with fixed demand estimates and fleet information. 
+That said, our model does not consider network flow or repositioning of aircraft, which means that we assume there is sufficient fleet at each origin where needed. Although we included pairing solutions to make the fleet return to where it departed as a priority, it does not mean that our model works on a timed schedule. In addition, as shown in the sample data section (3.1.3), the model requires a list of flight legs with fixed demand estimates and fleet information. 
 
 In the future, improvements can be made by combining dynamic demand forecasting with stochastic models, network flow with hub location problems or fleet relocating, scheduling problems such as time-based scheduling, crew scheduling, or multi-leg flight planning.
 
