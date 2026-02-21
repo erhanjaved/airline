@@ -548,6 +548,8 @@ The project first started with a simple idea of maximizing profit to make it a p
 
 That said, our model does not consider network flow or repositioning of aircraft, which means that we assume there is sufficient fleet at each origin where needed. Although we included pairing solutions to make the fleet return to where it departed as a priority, it does not mean that our model works on a timed schedule. In addition, as shown in the sample data section (3.1.3), the model requires a list of flight legs with fixed demand estimates and fleet information. 
 
+The revenue and cost terms in the objective function are largely independent, which results in trivial solutions. Introducing overbooking penalties could create a stronger coupling between seat allocation and fleet assignment.
+
 In the future, improvements can be made by combining dynamic demand forecasting with stochastic models, network flow with hub location problems or fleet relocating, scheduling problems such as time-based scheduling, crew scheduling, or multi-leg flight planning.
 
 
