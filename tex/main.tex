@@ -259,9 +259,10 @@ $$
 x_{i,j} = x_{i',j} \quad \forall j \in K,\; \forall (i,i') \in P
 $$
 
-Crew-Hour Availability. Total crew-hours used by fleet type $j$ across assigned flights cannot exceed the available aircraft-hours:
+Crew-Hour Availability. Each fleet type $j$ has $N_j$ aircraft available, each with a maximum of $H_{\max}$ crew-hours per day.
+Total block hours assigned to fleet $j$ cannot exceed the total available crew-hours:
 $$
-\sum_{i \in F} h_i\,x_{i,j} \le N_j \cdot H_{\max} \quad \forall j \in K
+\sum_{i \in F} h_i \, x_{i,j} \leq N_j \cdot H_{\max} \quad \forall j \in K
 $$
 
 Range Feasibility. A fleet type may only be assigned to routes within its operational range:
@@ -341,9 +342,10 @@ Each flight must be assigned exactly one fleet type:
 
 
 \item \textbf{Crew-Hour (Block-Hour) Availability}\\
-Total crew-hours consumed by fleet type $j$ cannot exceed available crew-hours:
+Each fleet type $j$ has $N_j$ aircraft available, each with a maximum of $H_{\max}$ crew-hours per day.
+Total block hours assigned to fleet $j$ cannot exceed the total available crew-hours:
 \begin{align*}
-\sum_{i \in F} h_i \cdot x_{i,j} \le N_j \cdot H_{\max} \quad \forall j \in K
+\sum_{i \in F} h_i \, x_{i,j} \leq N_j \cdot H_{\max} \quad \forall j \in K
 \end{align*}
 
 
